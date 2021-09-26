@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-N_NODES = 10
+N_NODES = 6
 X_LIM = 10
 Y_LIM = 10
 LMBDA = 0.3
@@ -50,11 +50,38 @@ class Environment():
     def draw(self):
         map_graph = nx.Graph()
         map_graph.add_edges_from(self.edge_list)
-        nx.draw(map_graph, self.node_positions, node_color='blue', )
-        plt.show()
+        nx.draw(map_graph, self.node_positions, node_color='cyan', with_labels=True)
+
+class Member():
+    def __init__(self, graph_matrix, node_positions):
+        self.graph_matrix = graph_matrix
+        self.node_positions = node_positions
+        self.route = np.zeros(1, dtype=int)
+
+        preceed = True
+        i = 0
+        while preceed:
+            self.route = np.append(self.route, np.random.choice(np.nonzero(graph_matrix[self.route[i]])[0]))
+            i += 1
+            if self.route[i] == np.shape(graph_matrix)[0] - 1:
+                preceed = False
+
+    def draw(self):
+        edges = [[self.route[i], self.route[i + 1]] for i in range(len(self.route) - 1)]
+        positions = [self.node_positions[node] for node in self.route]
+        route_graph = nx.Graph()
+        route_graph.add_edges_from(edges)
+        nx.draw(route_graph, self.node_positions, node_color='red', with_labels=True)
+
 
 if '__main__' == __name__:
+    np.random.seed(1)
 
     env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
-    env.draw()
 
+    for _ in range(1):
+        member = Member(env.graph_matrix, env.node_positions)
+
+    env.draw()
+    member.draw()
+    plt.show()
