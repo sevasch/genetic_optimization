@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-N_NODES = 6
+N_NODES = 10
 X_LIM = 10
 Y_LIM = 10
 LMBDA = 0.3
@@ -10,6 +10,22 @@ LMBDA = 0.3
 def make_edge_list(graph_matrix):
     indices = np.where(graph_matrix > 0)
     return [[indices[0][i], indices[1][i]] for i in range(len(indices[0]))]
+
+class Simulation():
+    def __init__(self):
+        pass
+
+    def create_initial_population(self):
+        pass
+
+    def evaluate_fitness(self):
+        pass
+
+    def generate_new_generation(self):
+        pass
+
+    def run(self):
+        pass
 
 class Environment():
     def __init__(self, n_nodes, x_lim, y_lim, lmbda):
@@ -42,46 +58,68 @@ class Environment():
             for connection_index in additional_connection_indices:
                 if not connection_index == node_no:
                     graph_matrix[node_no, connection_index] = distances[connection_index]
+                    graph_matrix[connection_index, node_no] = distances[connection_index]
 
         edge_list = make_edge_list(graph_matrix)
 
         return graph_matrix, node_positions, edge_list
 
-    def draw(self):
+    def draw(self, color='cyan'):
         map_graph = nx.Graph()
         map_graph.add_edges_from(self.edge_list)
-        nx.draw(map_graph, self.node_positions, node_color='cyan', with_labels=True)
+        nx.draw(map_graph, self.node_positions, node_color=color, with_labels=True)
 
 class Member():
-    def __init__(self, graph_matrix, node_positions):
+    def __init__(self, graph_matrix, node_positions, route=None):
         self.graph_matrix = graph_matrix
         self.node_positions = node_positions
-        self.route = np.zeros(1, dtype=int)
+        if route is not None:
+            self.route = route
+        else:
+            self.route = self._generate_route_segment(0, np.shape(graph_matrix)[0] - 1)
 
-        preceed = True
+    def _generate_route_segment(self, node_start: int, node_end: int):
+        route_segment = np.ones(1, dtype=int) * node_start
         i = 0
-        while preceed:
-            self.route = np.append(self.route, np.random.choice(np.nonzero(graph_matrix[self.route[i]])[0]))
+        while not route_segment[i] == node_end:
+            route_segment = np.append(route_segment, np.random.choice(np.nonzero(self.graph_matrix[route_segment[i]])[0]))
             i += 1
-            if self.route[i] == np.shape(graph_matrix)[0] - 1:
-                preceed = False
 
-    def draw(self):
+        return route_segment
+
+    def mutate(self):
+        index_start = np.random.randint(0, len(self.route) - 1)
+        index_end = index_start + np.random.randint(0, len(self.route) - index_start)
+        route_before = self.route[:index_start]
+        print(index_start, index_end)
+        route_after = self.route[index_end + 1:]
+        print(route_before, route_after)
+        route_intermediate = self._generate_route_segment(self.route[index_start], self.route[index_end])
+        mutated_route = np.concatenate([route_before, route_intermediate, route_after])
+        return Member(self.graph_matrix, self.node_positions, mutated_route)
+
+    def crossover_with(self, other):
+        pass
+
+
+    def draw(self, color='red'):
         edges = [[self.route[i], self.route[i + 1]] for i in range(len(self.route) - 1)]
-        positions = [self.node_positions[node] for node in self.route]
         route_graph = nx.Graph()
         route_graph.add_edges_from(edges)
-        nx.draw(route_graph, self.node_positions, node_color='red', with_labels=True)
+        nx.draw(route_graph, self.node_positions, node_color=color, with_labels=True)
 
 
 if '__main__' == __name__:
-    np.random.seed(1)
+    np.random.seed(101)
 
     env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
 
     for _ in range(1):
         member = Member(env.graph_matrix, env.node_positions)
 
+
+    print(member.route)
+    print(member.mutate().route)
     env.draw()
     member.draw()
     plt.show()
