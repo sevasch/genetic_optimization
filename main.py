@@ -1,31 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
+import time
 
-N_NODES = 10
-X_LIM = 10
-Y_LIM = 10
+N_NODES = 100
+X_LIM = 50
+Y_LIM = 50
 LMBDA = 0.3
+
+POPULATION_SIZE = 50
+N_GENERATIONS = 50
+N_ELITISM = 15
+N_RANDOM = 5
+MUTATION_PROBABILITY = 0.02
+
+COLORS = ['red', 'yellow', 'green', 'purple']
 
 def make_edge_list(graph_matrix):
     indices = np.where(graph_matrix > 0)
     return [[indices[0][i], indices[1][i]] for i in range(len(indices[0]))]
-
-class Simulation():
-    def __init__(self):
-        pass
-
-    def create_initial_population(self):
-        pass
-
-    def evaluate_fitness(self):
-        pass
-
-    def generate_new_generation(self):
-        pass
-
-    def run(self):
-        pass
 
 class Environment():
     def __init__(self, n_nodes, x_lim, y_lim, lmbda):
@@ -87,19 +80,39 @@ class Member():
 
         return route_segment
 
+    def get_total_distance(self):
+        distance = 0
+        for i in range(len(self.route) - 1):
+            distance += np.linalg.norm(self.node_positions[self.route[i]] - self.node_positions[self.route[i + 1]])
+        return distance
+
     def mutate(self):
         index_start = np.random.randint(0, len(self.route) - 1)
         index_end = index_start + np.random.randint(0, len(self.route) - index_start)
         route_before = self.route[:index_start]
-        print(index_start, index_end)
         route_after = self.route[index_end + 1:]
-        print(route_before, route_after)
         route_intermediate = self._generate_route_segment(self.route[index_start], self.route[index_end])
         mutated_route = np.concatenate([route_before, route_intermediate, route_after])
         return Member(self.graph_matrix, self.node_positions, mutated_route)
 
     def crossover_with(self, other):
-        pass
+        own_route = self.route
+        other_route = other.route
+        intersections = np.intersect1d(own_route[1:-1], other_route[1:-1])
+        if len(intersections):
+            intersection = np.random.choice(intersections)
+            own_snipping_location = np.random.choice(np.where(own_route[1:-1] == intersection)[0]) + 1
+            other_snipping_location = np.random.choice(np.where(other_route[1:-1] == intersection)[0]) + 1
+            if np.random.random() > 0.5:
+                new_route = np.concatenate([own_route[:own_snipping_location], other_route[other_snipping_location:]])
+            else:
+                new_route = np.concatenate([other_route[:other_snipping_location], own_route[own_snipping_location:]])
+        else:
+            if np.random.random() > 0.5:
+                new_route = own_route
+            else:
+                new_route = other_route
+        return Member(self.graph_matrix, self.node_positions, new_route)
 
 
     def draw(self, color='red'):
@@ -110,16 +123,58 @@ class Member():
 
 
 if '__main__' == __name__:
-    np.random.seed(101)
+    np.random.seed(6)
 
+    # create environment
     env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
 
-    for _ in range(1):
-        member = Member(env.graph_matrix, env.node_positions)
+    # create initial population
+    members = []
+    for _ in range(POPULATION_SIZE):
+        members.append(Member(env.graph_matrix, node_positions=env.node_positions))
+    pass
+    print('created generation 0')
+
+    best_distance = []
+    for generation_no in range(N_GENERATIONS):
+        # rate according to distance
+        members.sort(key=lambda member: member.get_total_distance(), reverse=False)
+
+        # select best members for elitism
+        new_members = [members[i] for i in range(N_ELITISM)]
+
+        # create random members
+        for _ in range(N_RANDOM):
+            new_members.append(Member(env.graph_matrix, env.node_positions))
+
+        # do crossover
+        for _ in range(POPULATION_SIZE - N_ELITISM - N_RANDOM):
+            new_members.append(np.random.choice(members).crossover_with(np.random.choice(members)))
+
+        # apply mutations
+        for i in range(len(new_members)):
+            if np.random.random() < MUTATION_PROBABILITY:
+                new_members[i] = new_members[i].mutate()
+
+        # update generation
+        members = new_members
+
+        print('created generation {}'.format(generation_no + 1))
+        best_distance.append(min([m.get_total_distance() for m in new_members]))
+
+        # plot top 5 members
+        plt.clf()
+        for member in sorted(members, key=lambda m: m.get_total_distance())[:5]:
+            env.draw()
+            member.draw(color=COLORS[np.mod(generation_no, len(COLORS))])
+            plt.pause(0.2)
 
 
-    print(member.route)
-    print(member.mutate().route)
-    env.draw()
-    member.draw()
+    # draw best
+    # env.draw()
+    # sorted(members, key=lambda m: m.get_total_distance())[0].draw()
+
+    plt.figure()
+    plt.plot(best_distance)
+    plt.xlabel('generation'), plt.ylabel('best distance')
     plt.show()
