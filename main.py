@@ -16,6 +16,15 @@ MUTATION_PROBABILITY = 0.02
 
 COLORS = ['red', 'yellow', 'green', 'purple']
 
+def create_intial_population(n_members):
+    return [Member() for _ in range(n_members)]
+
+def generate_new_population(p_elitism, p_direct_mutation, p_crossover, p_crossover_mutate) -> list:
+    assert p_elitism + p_direct_mutation + p_crossover + p_crossover_mutate <= 1
+    new_population = []
+    return new_population
+
+
 def make_edge_list(graph_matrix):
     indices = np.where(graph_matrix > 0)
     return [[indices[0][i], indices[1][i]] for i in range(len(indices[0]))]
