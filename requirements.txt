@@ -1,3 +1,5 @@
 numpy
 matplotlib
 networkx
+imageio
+imageio-ffmpeg

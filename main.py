@@ -1,18 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-import time
 
 N_NODES = 100
 X_LIM = 50
 Y_LIM = 50
-LMBDA = 0.3
+LMBDA = 0.30
 
 POPULATION_SIZE = 50
 N_GENERATIONS = 50
-N_ELITISM = 15
-N_RANDOM = 5
-MUTATION_PROBABILITY = 0.02
+N_ELITISM = 10
+N_CROSSOVER = 20
+MUTATION_PROBABILITY = 0.5
 
 COLORS = ['red', 'yellow', 'green', 'purple']
 
@@ -136,6 +135,7 @@ if '__main__' == __name__:
 
     # create environment
     env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
+    # env.draw(), plt.show()
 
     # create initial population
     members = []
@@ -152,18 +152,18 @@ if '__main__' == __name__:
         # select best members for elitism
         new_members = [members[i] for i in range(N_ELITISM)]
 
-        # create random members
-        for _ in range(N_RANDOM):
-            new_members.append(Member(env.graph_matrix, env.node_positions))
-
-        # do crossover
-        for _ in range(POPULATION_SIZE - N_ELITISM - N_RANDOM):
+        # do crossover and randomly mutate
+        for _ in range(N_CROSSOVER):
             new_members.append(np.random.choice(members).crossover_with(np.random.choice(members)))
 
-        # apply mutations
-        for i in range(len(new_members)):
+        # randomly create mutated copies
+        for new_member in new_members:
             if np.random.random() < MUTATION_PROBABILITY:
-                new_members[i] = new_members[i].mutate()
+                new_members.append(new_member.mutate())
+
+        # create random members
+        for _ in range(POPULATION_SIZE - len(new_members)):
+            new_members.append(Member(env.graph_matrix, env.node_positions))
 
         # update generation
         members = new_members
@@ -173,15 +173,16 @@ if '__main__' == __name__:
 
         # plot top 5 members
         plt.clf()
-        for member in sorted(members, key=lambda m: m.get_total_distance())[:5]:
+        for member in sorted(members, key=lambda m: m.get_total_distance())[:1]:
             env.draw()
             member.draw(color=COLORS[np.mod(generation_no, len(COLORS))])
+            plt.text(X_LIM*0.95, Y_LIM * 0.01, 'gen {}'.format(generation_no))
             plt.pause(0.2)
-
+        # plt.savefig('plots/gen' + str(generation_no).zfill(3) + '.png')
 
     # draw best
-    # env.draw()
-    # sorted(members, key=lambda m: m.get_total_distance())[0].draw()
+    env.draw()
+    sorted(members, key=lambda m: m.get_total_distance())[0].draw()
 
     plt.figure()
     plt.plot(best_distance)
