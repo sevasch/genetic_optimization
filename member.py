@@ -1,5 +1,5 @@
-from abc import abstractmethod
 from __future__ import annotations
+from abc import abstractmethod
 
 class Member():
     def __init__(self, chromosome, age=0):
@@ -9,12 +9,12 @@ class Member():
     ''' CREATION '''
     @classmethod
     @abstractmethod
-    def create_random(cls) -> Member:
+    def create_random(cls, *args):
         ''' Randomly initialize the member. '''
         pass
 
     @classmethod
-    def encode_from_data(cls, data) -> Member:
+    def encode_from_data(cls, data):
         ''' Create Member from phenotype data. '''
         pass
 
@@ -25,26 +25,19 @@ class Member():
 
     ''' EVALUATION '''
     @abstractmethod
-    def get_fitness(self, environment) -> float:
+    def get_fitness(self) -> float:
         ''' Evaluate fitness of member in a given environment. '''
         pass
 
     ''' GO TO NEXT GENERATION'''
     def let_survive(self):
         self.age += 1
+        return self
 
     @abstractmethod
-    def _mutate_chromosome(self) -> list:
-        ''' Define method to mutate the chromosome. '''
+    def mutate(self) -> __class__:
         pass
-
-    def mutate(self) -> Member:
-        return Member(self._mutate_chromosome(), age=0)
 
     @abstractmethod
-    def _crossover_cromosome(self, other: list) -> list:
-        ''' Define method to recombine two chromosomes. '''
+    def crossover(self, other) -> __class__:
         pass
-
-    def crossover(self, other: Member) -> Member:
-        return Member(self._crossover_cromosome(self.chromosome, other.chromosome), age=0)
