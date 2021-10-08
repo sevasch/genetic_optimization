@@ -9,9 +9,9 @@ NO_MATCH_PENALTY = 20
 
 N_GENERATIONS = 300
 POPULATION_SIZE = 100
-P_ELITISM = 0.1
-P_CROSSOVER = 0.7
-P_MUTATE = 0.2
+P_ELITISM = 0.2
+P_CROSSOVER = 0.3
+P_MUTATE = 0.3
 
 
 def create_random(priority_list, n_projects):
@@ -58,7 +58,7 @@ def crossover(first_chromosome, second_chromosome):
 
 
 if '__main__' == __name__:
-    np.random.seed(1)
+    # np.random.seed(1)
 
     # generate random priority list
     # priority_list = [np.random.choice(np.arange(N_PROJECTS), N_PRIORITIES, replace=False).tolist() for _ in range(N_STUDENTS)]
@@ -105,6 +105,7 @@ if '__main__' == __name__:
 
 
     labels = ['Prio {}'.format(i + 1) for i in range(N_PRIORITIES)] + ['none']
-    plt.title('Distribution of Matches')
+    plt.title('distribution of allocated priorities')
     plt.bar(labels, matches + [N_STUDENTS - np.sum(matches)])
     plt.show()
+

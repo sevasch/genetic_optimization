@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-class GeneticOptimizer():
+
+class GeneticOptimizer:
     def __init__(self,
                  create_member_fun,
                  mutate_fun,
@@ -10,7 +11,7 @@ class GeneticOptimizer():
                  p_elitism: float,
                  p_crossover: float,
                  p_mutate: float,
-                 crossover_coeff: float=0.2,
+                 crossover_coeff: float = 0.2,
                  high_is_good=False):
         assert p_elitism + p_crossover + p_mutate <= 1
         self.create_member_fun = create_member_fun
@@ -30,9 +31,7 @@ class GeneticOptimizer():
     def _create_intial_population(self, population_size):
         return [self.create_member_fun() for _ in range(population_size)]
 
-
     def _step_population(self, population_size) -> list:
-
         # rank according to evaluation
         self._population.sort(key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)
 
@@ -57,7 +56,6 @@ class GeneticOptimizer():
 
         self._population = new_population
 
-
     def run_evolution(self, n_generations, population_size, random_seed=None):
         # np.random.seed(random_seed)  #TODO: not working
 
@@ -72,8 +70,7 @@ class GeneticOptimizer():
             self._population_history.append(self._population)
             self._evaluation_history.append(self.evaluation_fun(self.get_best_member()))
             print('generation ' + str(generation_no + 1).zfill(4) + ', best evaluation value: ' + str(self.evaluation_fun(self.get_best_member())))
-
-    #TODO: to apply stepping of probabilities, create new run method and step values in between
+        print('---- evolution completed after {} generations ----'.format(generation_no + 1))
 
     def get_current_population(self):
         return sorted(self._population, key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)
@@ -82,7 +79,7 @@ class GeneticOptimizer():
         return sorted(self._population, key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)[0]
 
     def get_history(self):
-        return (self._population_history, self._evaluation_history)
+        return self._population_history, self._evaluation_history
 
     def plot_evaluation_history(self):
         plt.plot(self._evaluation_history)
