@@ -3,91 +3,90 @@ import matplotlib.pyplot as plt
 
 class GeneticOptimizer():
     def __init__(self,
-                 member_class,
+                 create_member_fun,
+                 mutate_fun,
+                 crossover_fun,
+                 evaluation_fun,
                  p_elitism: float,
                  p_crossover: float,
                  p_mutate: float,
-                 *member_args,
                  crossover_coeff: float=0.2,
-                 reverse_fitness=False):
+                 high_is_good=False):
         assert p_elitism + p_crossover + p_mutate <= 1
-        self.member_class = member_class
-        self.member_args = member_args
+        self.create_member_fun = create_member_fun
+        self.mutate_fun = mutate_fun
+        self.crossover_fun = crossover_fun
+        self.evaluation_fun = evaluation_fun
         self.p_elitism = p_elitism
         self.p_crossover = p_crossover
         self.p_mutate = p_mutate
         self.crossover_coeff = crossover_coeff  # low --> diverse parents
-        self.reverse_fitness = reverse_fitness
+        self.high_is_good = high_is_good
         self._population = []
         self._population_history = []
-        self._fitness_history = []
+        self._evaluation_history = []
 
 
-    def _create_intial_population(self,
-                                  population_size):
-        return [self.member_class.create_random(*self.member_args) for _ in range(population_size)]
+    def _create_intial_population(self, population_size):
+        return [self.create_member_fun() for _ in range(population_size)]
 
 
-    def _step_population(self,
-                         population_size) -> list:
+    def _step_population(self, population_size) -> list:
 
-        # rank according to fitness
-        self._population.sort(key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)
+        # rank according to evaluation
+        self._population.sort(key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)
 
         # select best members for elitism
-        new_population = [self._population[i].let_survive() for i in range(int(self.p_elitism * population_size))]
+        new_population = [self._population[i].copy() for i in range(int(self.p_elitism * population_size))]
 
         # apply crossover
         for _ in range(int(self.p_crossover * population_size)):
             member_indices = np.zeros(2)
             while (np.all(member_indices == member_indices[0]) or (max(member_indices) >= len(self._population))):
                 member_indices = np.random.geometric(p=self.crossover_coeff, size=2)
-            new_population.append(self._population[member_indices[0]].crossover(self._population[member_indices[1]]))
+            new_population.append(self.crossover_fun(self._population[member_indices[0]], self._population[member_indices[1]]))
 
         # apply mutations
         for member in new_population:
             if np.random.random() < self.p_mutate:
-                new_population.append(member.mutate())
+                new_population.append(self.mutate_fun(member))
 
         # fill up with random members
         for _ in range(population_size - len(new_population)):
-            new_population.append(self.member_class.create_random(*self.member_args))
+            new_population.append(self.create_member_fun())
 
         self._population = new_population
 
 
-    def run_evolution(self,
-                      n_generations,
-                      population_size,
-                      random_seed=None):
+    def run_evolution(self, n_generations, population_size, random_seed=None):
         # np.random.seed(random_seed)  #TODO: not working
 
         self._population = self._create_intial_population(population_size)
         self._population_history.append(self._population)
-        self._fitness_history.append(self.get_best_member().get_fitness())
+        self._evaluation_history.append(self.evaluation_fun(self.get_best_member()))
 
-        print('generation ' + str(0).zfill(4) + ', best fitness value: ' + str(self.get_best_member().get_fitness()))
+        print('generation ' + str(0).zfill(4) + ', best evaluation value: ' + str(self.evaluation_fun(self.get_best_member())))
 
         for generation_no in range(n_generations):
             self._step_population(population_size)
             self._population_history.append(self._population)
-            self._fitness_history.append(self.get_best_member().get_fitness())
-            print('generation ' + str(generation_no + 1).zfill(4) + ', best fitness value: ' + str(self.get_best_member().get_fitness()))
+            self._evaluation_history.append(self.evaluation_fun(self.get_best_member()))
+            print('generation ' + str(generation_no + 1).zfill(4) + ', best evaluation value: ' + str(self.evaluation_fun(self.get_best_member())))
 
     #TODO: to apply stepping of probabilities, create new run method and step values in between
 
     def get_current_population(self):
-        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)
+        return sorted(self._population, key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)
 
     def get_best_member(self):
-        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)[0]
+        return sorted(self._population, key=lambda member: self.evaluation_fun(member), reverse=self.high_is_good)[0]
 
     def get_history(self):
-        return (self._population_history, self._fitness_history)
+        return (self._population_history, self._evaluation_history)
 
-    def plot_fitness_history(self):
-        plt.plot(self._fitness_history)
-        plt.xlabel('generation'), plt.ylabel('best fitness value')
-        plt.xlim([0, len(self._fitness_history)])
+    def plot_evaluation_history(self):
+        plt.plot(self._evaluation_history)
+        plt.xlabel('generation'), plt.ylabel('best evaluation value')
+        plt.xlim([0, len(self._evaluation_history)])
         plt.grid()
         plt.show()

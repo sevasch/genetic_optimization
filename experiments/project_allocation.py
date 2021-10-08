@@ -5,13 +5,13 @@ from genetic_optimizer import GeneticOptimizer
 
 N_PROJECTS = 5
 N_PRIORITIES = 3
-N_STUDENTS = 3
+N_STUDENTS = 10
 
 N_GENERATIONS = 100
 POPULATION_SIZE = 10
 P_ELITISM = 0.2
-P_CROSSOVER = 0.
-P_MUTATE = 0.
+P_CROSSOVER = 0.4
+P_MUTATE = 0.3
 
 
 class Allocation(Member):
@@ -21,9 +21,9 @@ class Allocation(Member):
 
     @classmethod
     def create_random(cls, priority_list, n_projects):
-        assert n_projects > len(priority_list)
+        assert n_projects > len(priority_list[0])
         project_list = np.arange(n_projects)
-        return cls(np.random.choice(project_list, len(priority_list), replace=False), priority_list)
+        return cls(np.random.choice(project_list, len(priority_list[0]), replace=False), priority_list)
 
     def get_fitness(self) -> float:
         total_score = 0
@@ -43,6 +43,7 @@ class Allocation(Member):
         own_chromosome = self.chromosome
         other_chromosome = other.chromosome
         new_chromosome = own_chromosome.copy()
+        print(own_chromosome, other_chromosome)
         own_value = np.random.choice(np.intersect1d(own_chromosome, other_chromosome))
         if own_value.any():
             index1 = np.where(own_chromosome == own_value)[0].item()
@@ -65,7 +66,8 @@ if '__main__' == __name__:
                                  P_CROSSOVER,
                                  P_MUTATE,
                                  priority_list,
-                                 N_PROJECTS)
+                                 N_PROJECTS,
+                                 reverse_fitness=True)
 
     optimizer.run_evolution(N_GENERATIONS,
                             POPULATION_SIZE)
