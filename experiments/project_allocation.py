@@ -1,10 +1,10 @@
 import numpy as np
 import csv
 from genetic_optimizer import GeneticOptimizer
+import matplotlib.pyplot as plt
 from functools import partial
 
-N_PRIORITIES = 3
-N_STUDENTS = 9
+N_PROJECTS = 30
 NO_MATCH_PENALTY = 20
 
 N_GENERATIONS = 300
@@ -69,12 +69,13 @@ if '__main__' == __name__:
     with open('priority_list.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         for line_no, row in enumerate(csv_reader):
-            if line_no > 0:
+            if line_no == 0:
+                N_PRIORITIES = len(row) - 1
+            else:
                 names.append(row[0])
-                priority_list.append([int(project_no) for project_no in row[1:4]])
-    N_PROJECTS = 30
+                priority_list.append([int(project_no) for project_no in row[1:]])
     N_STUDENTS = len(priority_list)
-    print(N_PROJECTS, N_STUDENTS)
+    print('Anzahl Projekte: {}, Anzahl Studenten: {}, Anzahl wählbare Prioritäten: {}'.format(N_PROJECTS, N_STUDENTS, N_PRIORITIES))
 
     # create optimizer
     optimizer = GeneticOptimizer(create_member_fun=partial(create_random, priority_list, N_PROJECTS),
@@ -93,5 +94,17 @@ if '__main__' == __name__:
     # for result, priorities in zip(optimizer.get_best_member(), priority_list):
     #     print(priorities, result)
 
+    matches = N_PRIORITIES * [0]
     for name, result, priorities in zip(names, optimizer.get_best_member(), priority_list):
-        print('Student: {}, \t priorities: {}, \t gets project {}'.format(name,  priorities, result))
+        position_in_priorities = np.where(result == priorities)[0]
+        if len(position_in_priorities):
+            priority = position_in_priorities.item()
+            if priority < N_PRIORITIES:
+                matches[priority] += 1
+        print('Student: {}, \t priorities: {}, \t gets project {}, \t which was priority {}'.format(name,  priorities, result, priority + 1))
+
+
+    labels = ['Prio {}'.format(i + 1) for i in range(N_PRIORITIES)] + ['none']
+    plt.title('Distribution of Matches')
+    plt.bar(labels, matches + [N_STUDENTS - np.sum(matches)])
+    plt.show()
