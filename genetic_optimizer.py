@@ -88,6 +88,6 @@ class GeneticOptimizer():
         plt.plot(self._evaluation_history)
         plt.xlabel('generation'), plt.ylabel('best evaluation value')
         plt.xlim([0, len(self._evaluation_history)])
-        plt.ylim([0, max(self._evaluation_history)])
+        plt.ylim([0, max(self._evaluation_history) * 1.1])
         plt.grid()
         plt.show()
