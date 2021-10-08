@@ -5,15 +5,15 @@ from genetic_optimizer import GeneticOptimizer
 from functools import partial
 
 N_NODES = 100
-X_LIM = 50
-Y_LIM = 50
-LMBDA = 0.30
+X_LIM = 25
+Y_LIM = 25
+LMBDA = 0.45
 
-N_GENERATIONS = 30
+N_GENERATIONS = 20
 POPULATION_SIZE = 50
 P_ELITISM = 0.1
-P_CROSSOVER = 0.2
-P_MUTATE = 0.05
+P_CROSSOVER = 0.3
+P_MUTATE = 0.2
 
 COLORS = ['red', 'yellow', 'green', 'purple']
 
@@ -35,10 +35,14 @@ class Environment():
         node_positions = np.zeros((self.n_nodes, 2))
         for i in range(self.n_nodes):
             already_exists = True
+            counter = 0
             while already_exists:
                 node_position = np.array((np.random.randint(0, self.x_lim), np.random.randint(0, self.y_lim)))
                 if not (node_position == node_positions).all(1).any():
                     already_exists = False
+                counter += 1
+                if counter > 1000:
+                    continue
             node_positions[i] = node_position
 
         # generate node connections
@@ -115,7 +119,7 @@ def draw_route(env, route, color='red'):
 
 
 if '__main__' == __name__:
-    np.random.seed(6)
+    # np.random.seed(6)
 
     # create environment
     env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
@@ -136,6 +140,7 @@ if '__main__' == __name__:
 
     population_history, fitness_history = optimizer.get_history()
 
+    plt.figure(figsize=[12, 8])
     env.draw()
     for generation_no, population in enumerate(population_history):
         plt.clf()
