@@ -8,7 +8,8 @@ class GeneticOptimizer():
                  p_crossover: float,
                  p_mutate: float,
                  *member_args,
-                 crossover_coeff: float=0.2):
+                 crossover_coeff: float=0.2,
+                 reverse_fitness=False):
         assert p_elitism + p_crossover + p_mutate <= 1
         self.member_class = member_class
         self.member_args = member_args
@@ -16,6 +17,7 @@ class GeneticOptimizer():
         self.p_crossover = p_crossover
         self.p_mutate = p_mutate
         self.crossover_coeff = crossover_coeff  # low --> diverse parents
+        self.reverse_fitness = reverse_fitness
         self._population = []
         self._population_history = []
         self._fitness_history = []
@@ -30,7 +32,7 @@ class GeneticOptimizer():
                          population_size) -> list:
 
         # rank according to fitness
-        self._population.sort(key=lambda member: member.get_fitness(), reverse=False)
+        self._population.sort(key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)
 
         # select best members for elitism
         new_population = [self._population[i].let_survive() for i in range(int(self.p_elitism * population_size))]
@@ -75,10 +77,10 @@ class GeneticOptimizer():
     #TODO: to apply stepping of probabilities, create new run method and step values in between
 
     def get_current_population(self):
-        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=False)
+        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)
 
     def get_best_member(self):
-        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=False)[0]
+        return sorted(self._population, key=lambda member: member.get_fitness(), reverse=self.reverse_fitness)[0]
 
     def get_history(self):
         return (self._population_history, self._fitness_history)
