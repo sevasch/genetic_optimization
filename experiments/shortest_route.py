@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-from member import Member
 from genetic_optimizer import GeneticOptimizer
 from functools import partial
 
