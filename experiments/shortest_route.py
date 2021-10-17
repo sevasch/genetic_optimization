@@ -1,23 +1,39 @@
+import os
+import imageio
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 from genetic_optimizer import GeneticOptimizer
 from functools import partial
 
-N_NODES = 100
-X_LIM = 25
-Y_LIM = 25
-LMBDA = 0.45
-
-N_GENERATIONS = 20
-POPULATION_SIZE = 50
-P_ELITISM = 0.1
-P_CROSSOVER = 0.3
-P_MUTATE = 0.2
-
+''' CONSTANTS '''
 COLORS = ['red', 'yellow', 'green', 'purple']
 
+''' PARAMETERS '''
+parser = argparse.ArgumentParser(description='Genetic optimization of route in graph. ')
 
+# graph specific
+parser.add_argument('--n_nodes', type=int, default=100, help='number of nodes in graph')
+parser.add_argument('--x_lim', type=int, default=25, help='number of grid cells in x-direction')
+parser.add_argument('--y_lim', type=int, default=25, help='number of grid cells in y-direction')
+parser.add_argument('--lmbda', type=float, default=0.45, help='parameter for connections (low --> many connections)')
+
+# optimizer specific
+parser.add_argument('--n_generations', type=int, default=30, help='number of generations')
+parser.add_argument('--population_size', type=int, default=30, help='number of members in population')
+parser.add_argument('--p_elitism', type=float, default=0.1, help='proportion of elitist members')
+parser.add_argument('--p_crossover', type=float, default=0.3, help='proportion of crossover members')
+parser.add_argument('--p_mutate', type=float, default=0.1, help='probability to create mutated copy of member')
+
+# output
+parser.add_argument('--save_frames', type=bool, default=True, help='wether to save frames or not')
+parser.add_argument('--save_dir', type=str, default='frames', help='where to save frames')
+
+args = parser.parse_args()
+
+
+''' FUNCTIONS '''
 def make_edge_list(graph_matrix):
     indices = np.where(graph_matrix > 0)
     return [[indices[0][i], indices[1][i]] for i in range(len(indices[0]))]
@@ -118,27 +134,33 @@ def draw_route(env, route, color='red'):
     nx.draw(route_graph, env.node_positions, node_color=color, with_labels=True)
 
 
-if '__main__' == __name__:
-    # np.random.seed(6)
+def main():
+    np.random.seed(5)
 
     # create environment
-    env = Environment(N_NODES, X_LIM, Y_LIM, LMBDA)
+    env = Environment(args.n_nodes, args.x_lim, args.y_lim, args.lmbda)
 
     # create optimizer
     optimizer = GeneticOptimizer(create_member_fun = partial(generate_route_segment, env.graph_matrix, 0, np.shape(env.graph_matrix)[0] - 1),
                                  mutate_fun = partial(mutate, env),
                                  crossover_fun = crossover,
                                  evaluation_fun = partial(get_distance, env),
-                                 p_elitism = P_ELITISM,
-                                 p_crossover = P_CROSSOVER,
-                                 p_mutate = P_MUTATE)
+                                 p_elitism = args.p_elitism,
+                                 p_crossover = args.p_crossover,
+                                 p_mutate = args.p_mutate)
 
-    optimizer.run_evolution(N_GENERATIONS,
-                            POPULATION_SIZE)
+    # run evolution, plot results and extract population
+    optimizer.run_evolution(args.n_generations,
+                            args.population_size)
 
     optimizer.plot_evaluation_history()
 
     population_history, fitness_history = optimizer.get_history()
+
+
+    # visualize reesults
+    if args.save_frames:
+        os.makedirs(args.save_dir, exist_ok=True)
 
     plt.figure(figsize=[12, 8])
     env.draw()
@@ -147,8 +169,12 @@ if '__main__' == __name__:
         for route in population[:1]:
             env.draw()
             draw_route(env, route, color=COLORS[np.mod(generation_no, len(COLORS))])
-            plt.text(X_LIM*0.95, Y_LIM * 0.01, 'gen {}'.format(generation_no))
+            plt.text(args.x_lim * 0.95, args.y_lim * 0.01, 'gen {}'.format(generation_no))
             plt.pause(0.2)
-        # plt.savefig('plots/gen' + str(generation_no).zfill(3) + '.png')
-
+        if args.save_frames:
+            plt.savefig(os.path.join(args.save_dir, 'gen' + str(generation_no).zfill(int(np.log10(args.n_generations)) + 1) + '.png'))
     plt.show()
+
+
+if '__main__' == __name__:
+    main()
