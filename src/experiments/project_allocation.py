@@ -1,6 +1,6 @@
 import numpy as np
 import csv
-from genetic_optimizer import GeneticOptimizer
+from src.genetic_optimizer import GeneticOptimizer
 import matplotlib.pyplot as plt
 from functools import partial
 
@@ -66,7 +66,7 @@ if '__main__' == __name__:
     # input priority list from file
     names = []
     priority_list = []
-    with open('priority_list.csv') as csv_file:
+    with open('example_data/priority_list.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         for line_no, row in enumerate(csv_reader):
             if line_no == 0:

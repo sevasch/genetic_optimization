@@ -3,3 +3,4 @@ matplotlib
 networkx
 imageio
 imageio-ffmpeg
+black

@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
-from genetic_optimizer import GeneticOptimizer
+from src.genetic_optimizer import GeneticOptimizer
 from functools import partial
 
 ''' CONSTANTS '''
