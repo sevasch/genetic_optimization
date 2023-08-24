@@ -1,8 +1,10 @@
 import numpy as np
 import csv
-from src.genetic_optimizer import GeneticOptimizer
+from src.genetic_optimizer import genetic_optimizer
 import matplotlib.pyplot as plt
 from functools import partial
+
+#
 
 N_PROJECTS = 30
 NO_MATCH_PENALTY = 20
@@ -24,7 +26,9 @@ def get_ranking(priority_list: list, chromosome: list):
     total_score = 0
     for student_project, student_priorities in zip(chromosome, priority_list):
         position_on_list = np.where(np.array(student_priorities) == student_project)[0]
-        total_score += position_on_list.item() if len(position_on_list) > 0 else NO_MATCH_PENALTY
+        total_score += (
+            position_on_list.item() if len(position_on_list) > 0 else NO_MATCH_PENALTY
+        )
     return total_score
 
 
@@ -48,7 +52,9 @@ def crossover(first_chromosome, second_chromosome):
         first_value = np.random.choice(intersection)
         # print(own_value, first_chromosome)
         if first_value in second_chromosome:
-            second_value = second_chromosome[np.where(second_chromosome == first_value)[0].item()]
+            second_value = second_chromosome[
+                np.where(second_chromosome == first_value)[0].item()
+            ]
             if second_value in first_chromosome:
                 first_index = np.where(first_chromosome == first_value)[0].item()
                 second_index = np.where(first_chromosome == second_value)[0].item()
@@ -57,7 +63,7 @@ def crossover(first_chromosome, second_chromosome):
     return new_chromosome
 
 
-if '__main__' == __name__:
+if "__main__" == __name__:
     # np.random.seed(1)
 
     # generate random priority list
@@ -66,8 +72,8 @@ if '__main__' == __name__:
     # input priority list from file
     names = []
     priority_list = []
-    with open('example_data/priority_list.csv') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
+    with open("example_data/priority_list.csv") as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=";")
         for line_no, row in enumerate(csv_reader):
             if line_no == 0:
                 N_PRIORITIES = len(row) - 1
@@ -75,37 +81,53 @@ if '__main__' == __name__:
                 names.append(row[0])
                 priority_list.append([int(project_no) for project_no in row[1:]])
     N_STUDENTS = len(priority_list)
-    print('Anzahl Projekte: {}, Anzahl Studenten: {}, Anzahl wählbare Prioritäten: {}'.format(N_PROJECTS, N_STUDENTS, N_PRIORITIES))
+    print(
+        "Anzahl Projekte: {}, Anzahl Studenten: {}, Anzahl wählbare Prioritäten: {}".format(
+            N_PROJECTS, N_STUDENTS, N_PRIORITIES
+        )
+    )
 
-    # create optimizer
-    optimizer = GeneticOptimizer(create_member_fun=partial(create_random, priority_list, N_PROJECTS),
-                                 mutate_fun=partial(mutate, N_PROJECTS),
-                                 crossover_fun=crossover,
-                                 evaluation_fun=partial(get_ranking, priority_list),
-                                 p_elitism=P_ELITISM,
-                                 p_crossover=P_CROSSOVER,
-                                 p_mutate=P_MUTATE,
-                                 high_is_good=False)
+    # Run optimzation
+    best_member, population_history, fitness_history = genetic_optimizer(
+        fn_create_random_member=partial(create_random, priority_list, N_PROJECTS),
+        fn_mutate=partial(mutate, N_PROJECTS),
+        fn_crossover=crossover,
+        fn_cost=partial(get_ranking, priority_list),
+        p_elitism=P_ELITISM,
+        p_crossover=P_CROSSOVER,
+        p_mutate=P_MUTATE,
+        n_generations=N_GENERATIONS,
+        population_size=POPULATION_SIZE,
+        crossover_coeff=0.2
+    )
 
-    optimizer.run_evolution(N_GENERATIONS, POPULATION_SIZE)
-    optimizer.plot_evaluation_history()
-    population_history, fitness_history = optimizer.get_history()
+    # Display history of fitness values
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(np.arange(N_GENERATIONS + 1), fitness_history)
+    ax.grid()
+    ax.set_xlabel("Evolution Step")
+    ax.set_ylabel("Cost")
+    ax.set_xlim(0, N_GENERATIONS + 1)
+    plt.show()
 
-    # for result, priorities in zip(optimizer.get_best_member(), priority_list):
-    #     print(priorities, result)
 
     matches = N_PRIORITIES * [0]
-    for name, result, priorities in zip(names, optimizer.get_best_member(), priority_list):
+    for name, result, priorities in zip(
+        names, best_member, priority_list
+    ):
         position_in_priorities = np.where(result == priorities)[0]
         if len(position_in_priorities):
             priority = position_in_priorities.item()
             if priority < N_PRIORITIES:
                 matches[priority] += 1
-        print('Student: {}, \t priorities: {}, \t gets project {}, \t which was priority {}'.format(name,  priorities, result, priority + 1))
+        print(
+            "Student: {}, \t priorities: {}, \t gets project {}, \t which was priority {}".format(
+                name, priorities, result, priority + 1
+            )
+        )
 
-
-    labels = ['Prio {}'.format(i + 1) for i in range(N_PRIORITIES)] + ['none']
-    plt.title('distribution of allocated priorities')
+    labels = ["Prio {}".format(i + 1) for i in range(N_PRIORITIES)] + ["none"]
+    plt.title("distribution of allocated priorities")
     plt.bar(labels, matches + [N_STUDENTS - np.sum(matches)])
     plt.show()
-
