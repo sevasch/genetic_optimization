@@ -1,6 +1,61 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def genetic_optimizer(
+     fn_create_random_member: callable,
+     fn_mutate: callable,
+     fn_crossover: callable,
+     fn_evaluate: callable,
+     p_elitism: float,
+     p_crossover: float,
+     p_mutate: float,
+     crossover_coeff: float,
+     n_generations: int, 
+     population_size: int
+): 
+    def get_best_member():
+        return sorted(population, key=lambda member: fn_evaluate(member))[0]
+
+    population = []
+    population_history = []
+    evaluation_history = []
+    
+    # Initialize population
+        
+    population = [fn_create_random_member() for _ in range(population_size)]
+    population_history.append(population)
+    evaluation_history.append(fn_evaluate(get_best_member))
+
+    print('generation ' + str(0).zfill(4) + ', best evaluation value: ' + str(fn_evaluate(get_best_member())))
+
+    for generation_no in range(n_generations):
+        # rank according to evaluation
+        population.sort(key=lambda member: fn_evaluate(member))
+
+        # select best members for elitism
+        new_population = [population[i].copy() for i in range(int(p_elitism * population_size))]
+
+        # apply crossover
+        for _ in range(int(p_crossover * population_size)):
+            member_indices = np.zeros(2)
+            while (np.all(member_indices == member_indices[0]) or (max(member_indices) >= len(population))):
+                member_indices = np.random.geometric(p=crossover_coeff, size=2)
+            new_population.append(fn_crossover(population[member_indices[0]], population[member_indices[1]]))
+
+        # apply mutations
+        for member in new_population:
+            if np.random.random() < p_mutate:
+                new_population.append(fn_mutate(member))
+
+        # fill up with random members
+        for _ in range(population_size - len(new_population)):
+            new_population.append(fn_create_random_member())
+
+        population_history.append(population)
+        evaluation_history.append(fn_evaluate(get_best_member()))
+        print('generation ' + str(generation_no + 1).zfill(4) + ', best evaluation value: ' + str(fn_evaluate(get_best_member())))
+    print('---- evolution completed after {} generations ----'.format(generation_no + 1))
+
 
 class GeneticOptimizer:
     def __init__(self,
